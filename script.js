@@ -1,9 +1,6 @@
-// Narrative Visualization Parameters
 let currentScene = 0;
 let happinessData = [];
-let sceneData = [];
 
-// Scene configurations
 const scenes = [
     {
         id: 0,
@@ -37,13 +34,10 @@ const scenes = [
     }
 ];
 
-// Initialize the visualization
 async function init() {
     try {
-        // Load the happiness data
         happinessData = await d3.csv('archive/2019.csv');
         
-        // Convert string values to numbers
         happinessData.forEach(d => {
             d.Score = +d.Score;
             d['GDP per capita'] = +d['GDP per capita'];
@@ -54,7 +48,6 @@ async function init() {
             d['Perceptions of corruption'] = +d['Perceptions of corruption'];
         });
         
-        // Initialize the first scene
         loadScene(0);
         
     } catch (error) {
@@ -64,29 +57,22 @@ async function init() {
     }
 }
 
-// Load a specific scene
 function loadScene(sceneIndex) {
     currentScene = sceneIndex;
     const scene = scenes[sceneIndex];
     
-    // Update navigation buttons
     updateNavigation();
-    
-    // Update progress bar
     updateProgress();
     
-    // Clear the scene container
     const container = document.getElementById('sceneContainer');
     container.innerHTML = '';
     
-    // Add scene content
     container.innerHTML = `
         <div class="scene-title fade-in">${scene.title}</div>
         <div class="scene-description fade-in" id="sceneDescription">${scene.description}</div>
         <div class="chart-container" id="chartContainer"></div>
     `;
     
-    // Load the appropriate chart
     setTimeout(() => {
         switch(scene.chartType) {
             case 'topCountries':
@@ -94,28 +80,24 @@ function loadScene(sceneIndex) {
                 break;
             case 'gdpScatter':
                 createGDPScatterChart();
-                // Update description with calculated correlation while preserving custom text
                 const correlation = calculateCorrelation(happinessData, 'GDP per capita', 'Score');
                 const descriptionElement = document.getElementById('sceneDescription');
                 descriptionElement.innerHTML = `GDP per capita shows a strong positive correlation (r=${correlation.toFixed(3)}) with happiness. However, one country that sticks out is Costa Rica (rank 12), which has lower GDP but higher happiness than many wealthier nations.`;
                 break;
             case 'socialSupport':
                 createSocialSupportChart();
-                // Update description with calculated correlation
                 const socialCorrelation = calculateCorrelation(happinessData, 'Social support', 'Score');
                 const socialDescriptionElement = document.getElementById('sceneDescription');
                 socialDescriptionElement.innerHTML = `Social support also shows a strong positive correlation (r=${socialCorrelation.toFixed(3)}) with happiness scores. Countries with stronger social networks tend to be happier. Iceland, for example, has the highest social support score in the world and one of the highest happiness scores.`;
                 break;
             case 'regionalMap':
                 createRegionalMap();
-                // Update description with calculated correlation
                 const freedomCorrelation = calculateCorrelation(happinessData, 'Freedom to make life choices', 'Score');
                 const freedomDescriptionElement = document.getElementById('sceneDescription');
                 freedomDescriptionElement.innerHTML = `Freedom to make life choices shows a positive correlation (r=${freedomCorrelation.toFixed(3)}) with happiness. Countries where people feel they have more control over their lives tend to be happier. However, I expected the correlation to be similar or higher than the GDP and social support correlation coefficients.`;
                 break;
             case 'interactive':
                 createInteractiveChart();
-                // Update description for the bar chart visualization
                 const barChartDescriptionElement = document.getElementById('sceneDescription');
                 barChartDescriptionElement.innerHTML = `Now you can explore all 156 countries in an interactive bar chart. Countries are sorted by happiness score, with the happiest countries at the top. Use the search box to filter and find specific countries - when you search, only matching countries will be displayed.`;
                 break;
@@ -123,7 +105,6 @@ function loadScene(sceneIndex) {
     }, 100);
 }
 
-// Navigation functions
 function nextScene() {
     if (currentScene < scenes.length - 1) {
         loadScene(currentScene + 1);
@@ -142,7 +123,6 @@ function goToScene(sceneIndex) {
     }
 }
 
-// Update navigation buttons
 function updateNavigation() {
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
@@ -151,13 +131,11 @@ function updateNavigation() {
     nextBtn.disabled = currentScene === scenes.length - 1;
 }
 
-// Update progress bar
 function updateProgress() {
     const progress = ((currentScene + 1) / scenes.length) * 100;
     document.getElementById('progressFill').style.width = progress + '%';
 }
 
-// Chart 1: Top Countries Bar Chart
 function createTopCountriesChart() {
     const top20 = happinessData.slice(0, 20);
     
@@ -172,7 +150,6 @@ function createTopCountriesChart() {
         .append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
     
-    // Scales
     const x = d3.scaleBand()
         .domain(top20.map(d => d['Country or region']))
         .range([0, width])
@@ -182,12 +159,10 @@ function createTopCountriesChart() {
         .domain([0, d3.max(top20, d => d.Score)])
         .range([height, 0]);
     
-    // Color scale
     const color = d3.scaleSequential()
         .domain([0, d3.max(top20, d => d.Score)])
         .interpolator(d3.interpolateBlues);
     
-    // Bars
     svg.selectAll('.bar')
         .data(top20)
         .enter()
@@ -208,7 +183,6 @@ function createTopCountriesChart() {
             hideTooltip();
         });
     
-    // X-axis
     svg.append('g')
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(x))
@@ -216,24 +190,17 @@ function createTopCountriesChart() {
         .attr('transform', 'rotate(-45)')
         .style('text-anchor', 'end');
     
-    // Y-axis
     svg.append('g')
         .call(d3.axisLeft(y));
     
-    // Labels
     svg.append('text')
         .attr('x', width / 2)
         .attr('y', -10)
         .attr('text-anchor', 'middle')
         .style('font-size', '16px')
         .text('Happiness Score');
-    
-    // Annotations - repositioned to avoid obstruction
-    // addAnnotation(svg, 20, 20, 'Finland leads with 7.769', 'top');
-    // addAnnotation(svg, width - 180, 20, 'Nordic countries dominate the top 10', 'top');
 }
 
-// Chart 2: GDP vs Happiness Scatter Plot
 function createGDPScatterChart() {
     const margin = {top: 40, right: 30, bottom: 60, left: 80};
     const width = 900 - margin.left - margin.right;
@@ -241,15 +208,13 @@ function createGDPScatterChart() {
     
     const svg = d3.select('#chartContainer')
         .append('svg')
-        .attr('width', width + margin.left + margin.right + 250) // Increased width for legend
+        .attr('width', width + margin.left + margin.right + 250)
         .attr('height', height + margin.top + margin.bottom)
         .append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
     
-    // Calculate correlation coefficient
     const correlation = calculateCorrelation(happinessData, 'GDP per capita', 'Score');
     
-    // Scales
     const x = d3.scaleLinear()
         .domain([0, d3.max(happinessData, d => d['GDP per capita'])])
         .range([0, width]);
@@ -258,12 +223,10 @@ function createGDPScatterChart() {
         .domain([0, d3.max(happinessData, d => d.Score)])
         .range([height, 0]);
     
-    // Color scale
     const color = d3.scaleSequential()
         .domain([0, d3.max(happinessData, d => d.Score)])
         .interpolator(d3.interpolateBlues);
     
-    // Points
     svg.selectAll('circle')
         .data(happinessData)
         .enter()
@@ -282,7 +245,6 @@ function createGDPScatterChart() {
             hideTooltip();
         });
     
-    // Axes
     svg.append('g')
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(x));
@@ -290,7 +252,6 @@ function createGDPScatterChart() {
     svg.append('g')
         .call(d3.axisLeft(y));
     
-    // Labels
     svg.append('text')
         .attr('x', width / 2)
         .attr('y', height + 40)
@@ -304,13 +265,11 @@ function createGDPScatterChart() {
         .attr('text-anchor', 'middle')
         .text('Happiness Score');
     
-    // Add color legend - moved outside the main plotting area
     const legendWidth = 200;
     const legendHeight = 20;
-    const legendX = width + 20; // Position outside the main chart area
+    const legendX = width + 20;
     const legendY = 10;
     
-    // Legend gradient
     const legendGradient = svg.append('defs')
         .append('linearGradient')
         .attr('id', 'legendGradient')
@@ -327,7 +286,6 @@ function createGDPScatterChart() {
         .attr('offset', '100%')
         .attr('stop-color', d3.interpolateBlues(1));
     
-    // Legend rectangle
     svg.append('rect')
         .attr('x', legendX)
         .attr('y', legendY)
@@ -336,7 +294,6 @@ function createGDPScatterChart() {
         .attr('fill', 'url(#legendGradient)')
         .attr('stroke', '#ccc');
     
-    // Legend labels
     svg.append('text')
         .attr('x', legendX)
         .attr('y', legendY - 5)
@@ -356,7 +313,6 @@ function createGDPScatterChart() {
         .style('text-anchor', 'end')
         .text('High');
     
-    // Highlight Costa Rica
     const costaRica = happinessData.find(d => d['Country or region'] === 'Costa Rica');
     if (costaRica) {
         svg.append('circle')
@@ -366,13 +322,9 @@ function createGDPScatterChart() {
             .attr('fill', 'none')
             .attr('stroke', '#ff6b6b')
             .attr('stroke-width', 3);
-        
-        // addAnnotation(svg, x(costaRica['GDP per capita']) + 20, y(costaRica.Score) - 20, 
-        //     'Costa Rica: High happiness despite lower GDP', 'top');
     }
 }
 
-// Chart 3: Social Support vs Happiness Scatter Plot
 function createSocialSupportChart() {
     const margin = {top: 40, right: 30, bottom: 60, left: 80};
     const width = 900 - margin.left - margin.right;
@@ -380,15 +332,13 @@ function createSocialSupportChart() {
     
     const svg = d3.select('#chartContainer')
         .append('svg')
-        .attr('width', width + margin.left + margin.right + 250) // Extra width for legend
+        .attr('width', width + margin.left + margin.right + 250)
         .attr('height', height + margin.top + margin.bottom)
         .append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
     
-    // Calculate correlation coefficient
     const correlation = calculateCorrelation(happinessData, 'Social support', 'Score');
     
-    // Scales
     const x = d3.scaleLinear()
         .domain([0, d3.max(happinessData, d => d['Social support'])])
         .range([0, width]);
@@ -397,12 +347,10 @@ function createSocialSupportChart() {
         .domain([0, d3.max(happinessData, d => d.Score)])
         .range([height, 0]);
     
-    // Color scale
     const color = d3.scaleSequential()
         .domain([0, d3.max(happinessData, d => d.Score)])
         .interpolator(d3.interpolateGreens);
     
-    // Points - All 156 countries from the dataset
     svg.selectAll('circle')
         .data(happinessData)
         .enter()
@@ -421,7 +369,6 @@ function createSocialSupportChart() {
             hideTooltip();
         });
     
-    // Axes
     svg.append('g')
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(x));
@@ -429,7 +376,6 @@ function createSocialSupportChart() {
     svg.append('g')
         .call(d3.axisLeft(y));
     
-    // Labels
     svg.append('text')
         .attr('x', width / 2)
         .attr('y', height + 40)
@@ -443,13 +389,11 @@ function createSocialSupportChart() {
         .attr('text-anchor', 'middle')
         .text('Happiness Score');
     
-    // Add color legend - moved outside the main plotting area
     const legendWidth = 200;
     const legendHeight = 20;
-    const legendX = width + 20; // Position outside the main chart area
+    const legendX = width + 20;
     const legendY = 10;
     
-    // Legend gradient
     const legendGradient = svg.append('defs')
         .append('linearGradient')
         .attr('id', 'legendGradientSocial')
@@ -466,7 +410,6 @@ function createSocialSupportChart() {
         .attr('offset', '100%')
         .attr('stop-color', d3.interpolateGreens(1));
     
-    // Legend rectangle
     svg.append('rect')
         .attr('x', legendX)
         .attr('y', legendY)
@@ -475,7 +418,6 @@ function createSocialSupportChart() {
         .attr('fill', 'url(#legendGradientSocial)')
         .attr('stroke', '#ccc');
     
-    // Legend labels
     svg.append('text')
         .attr('x', legendX)
         .attr('y', legendY - 5)
@@ -495,7 +437,6 @@ function createSocialSupportChart() {
         .style('text-anchor', 'end')
         .text('High');
     
-    // Highlight Iceland (highest social support)
     const iceland = happinessData.find(d => d['Country or region'] === 'Iceland');
     if (iceland) {
         svg.append('circle')
@@ -508,12 +449,10 @@ function createSocialSupportChart() {
     }
 }
 
-// Chart 4: Freedom and Happiness Comparison
 function createRegionalMap() {
-    // Get countries with highest and lowest freedom of life choices
     const sortedByFreedom = happinessData.sort((a, b) => b['Freedom to make life choices'] - a['Freedom to make life choices']);
-    const top10Freedom = sortedByFreedom.slice(0, 10); // Highest freedom
-    const bottom10Freedom = sortedByFreedom.slice(-10); // Lowest freedom
+    const top10Freedom = sortedByFreedom.slice(0, 10);
+    const bottom10Freedom = sortedByFreedom.slice(-10);
     
     const margin = {top: 40, right: 30, bottom: 100, left: 120};
     const width = 900 - margin.left - margin.right;
@@ -526,17 +465,14 @@ function createRegionalMap() {
         .append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
     
-    // Calculate averages for comparison
     const avgHappinessHighFreedom = d3.mean(top10Freedom, d => d.Score);
     const avgHappinessLowFreedom = d3.mean(bottom10Freedom, d => d.Score);
     
-    // Create data for the comparison chart
     const comparisonData = [
         { group: 'Highest Freedom Countries', avgHappiness: avgHappinessHighFreedom, count: top10Freedom.length },
         { group: 'Lowest Freedom Countries', avgHappiness: avgHappinessLowFreedom, count: bottom10Freedom.length }
     ];
     
-    // Scales
     const x = d3.scaleBand()
         .domain(comparisonData.map(d => d.group))
         .range([0, width])
@@ -546,12 +482,10 @@ function createRegionalMap() {
         .domain([0, d3.max(comparisonData, d => d.avgHappiness) * 1.1])
         .range([height, 0]);
     
-    // Color scale
     const color = d3.scaleOrdinal()
         .domain(['Highest Freedom Countries', 'Lowest Freedom Countries'])
         .range(['#2E8B57', '#DC143C']);
     
-    // Bars
     svg.selectAll('.bar')
         .data(comparisonData)
         .enter()
@@ -572,7 +506,6 @@ function createRegionalMap() {
             hideTooltip();
         });
     
-    // Add value labels on bars
     svg.selectAll('.value-label')
         .data(comparisonData)
         .enter()
@@ -585,7 +518,6 @@ function createRegionalMap() {
         .style('font-weight', 'bold')
         .text(d => d.avgHappiness.toFixed(3));
     
-    // Axes
     svg.append('g')
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(x));
@@ -593,7 +525,6 @@ function createRegionalMap() {
     svg.append('g')
         .call(d3.axisLeft(y));
     
-    // Labels
     svg.append('text')
         .attr('x', width / 2)
         .attr('y', -10)
@@ -609,7 +540,6 @@ function createRegionalMap() {
         .attr('text-anchor', 'middle')
         .text('Average Happiness Score');
     
-    // Add explanation
     svg.append('text')
         .attr('x', width / 2)
         .attr('y', height + 60)
@@ -618,7 +548,6 @@ function createRegionalMap() {
         .style('fill', '#666')
         .text('Comparing average happiness of top 10 vs bottom 10 countries by freedom of life choices');
     
-    // Add country lists
     svg.append('text')
         .attr('x', 0)
         .attr('y', height + 80)
@@ -634,20 +563,17 @@ function createRegionalMap() {
         .text('Lowest Freedom Countries: ' + bottom10Freedom.map(d => d['Country or region']).join(', '));
 }
 
-// Chart 5: Interactive Searchable Bar Chart
 function createInteractiveChart() {
     const margin = {top: 40, right: 30, bottom: 60, left: 80};
     const width = 1000 - margin.left - margin.right;
     const height = 600 - margin.top - margin.bottom;
     
-    // Add search container with better positioning
     const searchContainer = d3.select('#chartContainer')
         .append('div')
         .attr('class', 'search-container')
         .style('text-align', 'center')
         .style('margin-bottom', '20px');
     
-    // Add search input
     searchContainer.append('input')
         .attr('type', 'text')
         .attr('id', 'countrySearch')
@@ -665,26 +591,21 @@ function createInteractiveChart() {
         .append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
     
-    // Sort data by happiness score (descending)
     const sortedData = happinessData.sort((a, b) => b.Score - a.Score);
     
-    // Scales
     const x = d3.scaleBand()
         .domain(sortedData.map(d => d['Country or region']))
         .range([0, width])
         .padding(0.1);
     
-    // Keep y-axis scale consistent with full dataset range
     const y = d3.scaleLinear()
         .domain([0, d3.max(happinessData, d => d.Score)])
         .range([height, 0]);
     
-    // Color scale
     const color = d3.scaleSequential()
         .domain([0, d3.max(happinessData, d => d.Score)])
         .interpolator(d3.interpolateReds);
     
-    // Initial bars (all countries)
     svg.selectAll('.bar')
         .data(sortedData)
         .enter()
@@ -705,20 +626,17 @@ function createInteractiveChart() {
             hideTooltip();
         });
     
-    // X-axis (without labels)
     svg.append('g')
         .attr('class', 'x-axis')
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(x))
         .selectAll('text')
-        .remove(); // Remove all text labels
+        .remove();
     
-    // Y-axis
     svg.append('g')
         .attr('class', 'y-axis')
         .call(d3.axisLeft(y));
     
-    // Labels
     svg.append('text')
         .attr('x', width / 2)
         .attr('y', -10)
@@ -734,7 +652,6 @@ function createInteractiveChart() {
         .attr('text-anchor', 'middle')
         .text('Happiness Score');
     
-    // Add instruction text
     svg.append('text')
         .attr('class', 'instruction-text')
         .attr('x', width / 2)
@@ -744,7 +661,6 @@ function createInteractiveChart() {
         .style('fill', '#666')
         .text('All 156 countries shown. Use the search box to filter and see specific countries.');
     
-    // Store references for search functionality
     window.barChartData = sortedData;
     window.barChartSvg = svg;
     window.barChartX = x;
@@ -754,34 +670,25 @@ function createInteractiveChart() {
     window.barChartWidth = width;
 }
 
-// Function to update bar chart based on search
 function updateBarChart(searchTerm, svg, x, y, color, height, width) {
     let filteredData;
     
     if (searchTerm.length === 0) {
-        // Show all countries
         filteredData = window.barChartData;
     } else {
-        // Filter to matching countries
         filteredData = window.barChartData.filter(d => 
             d['Country or region'].toLowerCase().includes(searchTerm)
         );
     }
     
-    // Update x scale for filtered data
     x.domain(filteredData.map(d => d['Country or region']));
-    
-    // Keep y-axis scale consistent with full dataset range
     y.domain([0, d3.max(happinessData, d => d.Score)]);
     
-    // Update bars
     const bars = svg.selectAll('.bar')
         .data(filteredData, d => d['Country or region']);
     
-    // Remove old bars
     bars.exit().remove();
     
-    // Add new bars
     const newBars = bars.enter()
         .append('rect')
         .attr('class', 'bar')
@@ -796,7 +703,6 @@ function updateBarChart(searchTerm, svg, x, y, color, height, width) {
             hideTooltip();
         });
     
-    // Update all bars
     svg.selectAll('.bar')
         .attr('x', d => x(d['Country or region']))
         .attr('y', d => y(d.Score))
@@ -804,22 +710,19 @@ function updateBarChart(searchTerm, svg, x, y, color, height, width) {
         .attr('height', d => height - y(d.Score))
         .attr('fill', d => color(d.Score));
     
-    // Update x-axis (without labels)
     svg.select('.x-axis').remove();
     svg.append('g')
         .attr('class', 'x-axis')
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(x))
         .selectAll('text')
-        .remove(); // Remove all text labels
+        .remove();
     
-    // Update y-axis (keep consistent scale)
     svg.select('.y-axis').remove();
     svg.append('g')
         .attr('class', 'y-axis')
         .call(d3.axisLeft(y));
     
-    // Update instruction text
     svg.select('.instruction-text').remove();
     let instructionText;
     if (searchTerm.length === 0) {
@@ -840,39 +743,6 @@ function updateBarChart(searchTerm, svg, x, y, color, height, width) {
         .style('font-size', '14px')
         .style('fill', '#666')
         .text(instructionText);
-}
-
-// Function to highlight countries based on search
-function highlightCountry(searchTerm) {
-    // This function is no longer needed as we are using a bar chart for search.
-    // If search functionality is re-introduced, this function will need to be updated.
-}
-
-// Tooltip function for map
-function showMapTooltip(event, d) {
-    // This function is no longer needed as we are using a bar chart instead of a map.
-    // The showDetailedTooltip function is used for the bar chart.
-}
-
-// Helper functions
-function addAnnotation(svg, x, y, text, position) {
-    const annotation = svg.append('g')
-        .attr('class', 'annotation')
-        .attr('transform', `translate(${x}, ${y})`);
-    
-    annotation.append('rect')
-        .attr('width', 160)
-        .attr('height', 40)
-        .attr('fill', 'rgba(255, 255, 255, 0.95)')
-        .attr('stroke', '#667eea')
-        .attr('stroke-width', 2)
-        .attr('rx', 6);
-    
-    annotation.append('text')
-        .attr('x', 8)
-        .attr('y', 15)
-        .style('font-size', '11px')
-        .text(text);
 }
 
 function showTooltip(event, d) {
@@ -935,39 +805,12 @@ function showSocialSupportTooltip(event, d) {
     `);
 }
 
-function showCorruptionTooltip(event, d) {
-    const tooltip = d3.select('body').append('div')
-        .attr('class', 'tooltip')
-        .style('left', (event.pageX + 10) + 'px')
-        .style('top', (event.pageY - 10) + 'px');
-    
-    tooltip.html(`
-        <strong>${d['Country or region']}</strong><br/>
-        Rank: ${d['Overall rank']}<br/>
-        Corruption: ${d['Perceptions of corruption'].toFixed(3)}
-    `);
-}
-
-function showFreedomTooltip(event, d) {
-    const tooltip = d3.select('body').append('div')
-        .attr('class', 'tooltip')
-        .style('left', (event.pageX + 10) + 'px')
-        .style('top', (event.pageY - 10) + 'px');
-    
-    tooltip.html(`
-        <strong>${d['Country or region']}</strong><br/>
-        Rank: ${d['Overall rank']}<br/>
-        Freedom: ${d['Freedom to make life choices'].toFixed(3)}
-    `);
-}
-
 function showComparisonTooltip(event, d) {
     const tooltip = d3.select('body').append('div')
         .attr('class', 'tooltip')
         .style('left', (event.pageX + 10) + 'px')
         .style('top', (event.pageY - 10) + 'px');
     
-    // Calculate average freedom for the group
     let avgFreedom;
     if (d.group === 'Highest Freedom Countries') {
         const top10Freedom = happinessData.sort((a, b) => b['Freedom to make life choices'] - a['Freedom to make life choices']).slice(0, 10);
@@ -989,7 +832,6 @@ function hideTooltip() {
     d3.selectAll('.tooltip').remove();
 }
 
-// Helper function to calculate correlation coefficient
 function calculateCorrelation(data, xKey, yKey) {
     const n = data.length;
     if (n === 0) return 0;
@@ -1003,24 +845,8 @@ function calculateCorrelation(data, xKey, yKey) {
     const numerator = n * sumXY - sumX * sumY;
     const denominator = Math.sqrt((n * sumXSquared - sumX ** 2) * (n * sumYSquared - sumY ** 2));
 
-    if (denominator === 0) return 0; // Avoid division by zero
+    if (denominator === 0) return 0;
     return numerator / denominator;
 }
 
-// Fallback function to create a simple world map
-function createSimpleWorldMap(svg, width, height, colorScale, happinessMap) {
-    // This function is no longer needed as we are using a bar chart instead of a map.
-}
-
-// Function to add map legend
-function addMapLegend(svg, width, height, colorScale) {
-    // This function is no longer needed as we are using a bar chart instead of a map.
-}
-
-// Final fallback: Create a grid-based visualization
-function createGridVisualization(svg, width, height, colorScale, happinessMap) {
-    // This function is no longer needed as we are using a bar chart instead of a map.
-}
-
-// Initialize when the page loads
 document.addEventListener('DOMContentLoaded', init); 

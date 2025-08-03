@@ -137,7 +137,8 @@ function updateProgress() {
 }
 
 function createTopCountriesChart() {
-    const top20 = happinessData.slice(0, 20);
+    const top20 = happinessData.slice().sort((a, b) => d3.descending(a.Score, b.Score)).slice(0, 20);
+
     
     const margin = {top: 40, right: 30, bottom: 100, left: 80};
     const width = 900 - margin.left - margin.right;
